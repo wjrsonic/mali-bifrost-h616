@@ -100,6 +100,7 @@ static int pm_callback_soft_reset(struct kbase_device *kbdev)
 	return 0;
 }
 
+#ifndef CONFIG_ARCH_SUNXI
 static void enable_gpu_power_control(struct kbase_device *kbdev)
 {
 	unsigned int i;
@@ -143,13 +144,20 @@ static void disable_gpu_power_control(struct kbase_device *kbdev)
 	}
 #endif
 }
+#endif
 
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 	int ret = 1; /* Assume GPU has been powered off */
 	int error;
+	static int first = 1;
 
 	dev_dbg(kbdev->dev, "%s %p\n", __func__, (void *)kbdev->dev->pm_domain);
+
+	if (first) {
+		pm_callback_soft_reset(kbdev);
+		first = 0;
+	}
 
 #ifdef KBASE_PM_RUNTIME
 	error = pm_runtime_get_sync(kbdev->dev);
@@ -222,7 +230,9 @@ static int pm_callback_runtime_on(struct kbase_device *kbdev)
 {
 	dev_dbg(kbdev->dev, "%s\n", __func__);
 
+#ifndef CONFIG_ARCH_SUNXI
 	enable_gpu_power_control(kbdev);
+#endif
 	return 0;
 }
 
@@ -230,7 +240,9 @@ static void pm_callback_runtime_off(struct kbase_device *kbdev)
 {
 	dev_dbg(kbdev->dev, "%s\n", __func__);
 
+#ifndef CONFIG_ARCH_SUNXI
 	disable_gpu_power_control(kbdev);
+#endif
 }
 
 static void pm_callback_resume(struct kbase_device *kbdev)
